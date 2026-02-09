@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine's Day Tito</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Nunito:wght@400;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --env-body: #c62828;      
+            --env-flap: #ffab91;      
+            --card-bg: #fffbfd;
+            --text-main: #4a3333;
+            --accent: #d32f2f;
+        }
+
+        body {
+            margin: 0; padding: 0; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            background-color: #ffe6ea;
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden; perspective: 2000px;
+            transition: background-color 2.5s ease-in-out; 
+        }
+
+        /* --- Envelope --- */
+        .stage { position: relative; width: 300px; height: 200px; transform: scale(1.4); z-index: 10; transition: opacity 0.5s ease; }
+        .envelope { position: relative; width: 100%; height: 100%; background-color: var(--env-body); border-radius: 0 0 8px 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); cursor: pointer; }
+        .flap { position: absolute; top: 0; left: 0; width: 0; height: 0; border-style: solid; border-width: 120px 150px 0 150px; border-color: var(--env-flap) transparent transparent transparent; transform-origin: top; z-index: 30; transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .flap.open { transform: rotateX(180deg); z-index: 5; }
+        .seal { position: absolute; top: 120px; left: 50%; transform: translate(-50%, -50%); width: 45px; height: 45px; background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b); border-radius: 50%; z-index: 40; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: opacity 0.3s; }
+
+        /* --- Card & Book --- */
+        .card { position: fixed; top: 50%; left: 50%; width: 290px; height: 190px; z-index: 100; transform: translate(-50%, -50%) scale(0); transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; opacity: 0; }
+        .card.emerge { opacity: 1; transform: translate(-50%, -150%) scale(1); }
+        .card.fullscreen { width: 85vw; height: 70vh; max-width: 800px; max-height: 500px; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+
+        .book { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; opacity: 0; transition: opacity 0.5s; }
+        .book.visible { opacity: 1; }
+
+        .page { position: absolute; width: 50%; height: 100%; top: 0; background: #fffcf9; border: 12px solid white; box-sizing: border-box; transform-origin: left; transition: transform 1.2s cubic-bezier(0.645, 0.045, 0.355, 1); transform-style: preserve-3d; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .page-static-left { left: 0; z-index: 1; padding: 20px; }
+        .page-static-right { left: 50%; z-index: 1; padding: 0; overflow: hidden; background: #000; }
+        .page-flip { left: 50%; z-index: 10; }
+        .page-flip.flipped { transform: rotateY(-180deg); }
+
+        .front, .back { position: absolute; width: 100%; height: 100%; top: 0; left: 0; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; background: #fffcf9; }
+        .back { transform: rotateY(180deg); }
+
+        .cover { position: absolute; inset: 0; background: linear-gradient(135deg, #f3928e 0%, #ffcdd2 100%); transform-origin: left; transition: transform 1.2s; z-index: 20; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px; color: white; backface-visibility: hidden; }
+        .card.open-book .cover { transform: rotateY(-180deg); border-radius: 0 12px 12px 0; }
+
+        /* Bear Animation */
+        .bear-box { width: 120px; margin-bottom: 10px; visibility: hidden; opacity: 0; transition: opacity 0.3s; }
+        .bear-box.active { visibility: visible; opacity: 1; animation: wiggle 0.8s ease-in-out, float 4s infinite 0.8s; }
+        .bear-box img { width: 100%; height: auto; display: block; }
+
+        @keyframes wiggle {
+            0% { transform: rotate(0deg) scale(0.8); }
+            25% { transform: rotate(10deg) scale(1.1); }
+            50% { transform: rotate(-10deg) scale(1.1); }
+            75% { transform: rotate(5deg) scale(1.05); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* Video & New Text Overlay */
+        .video-container { width: 100%; height: 100%; position: relative; }
+        video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        #finalOverlay { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: rgba(128, 15, 47, 0.85); /* Dark romantic overlay */
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            opacity: 0; 
+            transition: opacity 2s ease; 
+            pointer-events: none; 
+            z-index: 100;
+            color: white;
+            text-align: center;
+        }
+
+        .love-text { font-family: 'Great Vibes', cursive; font-size: 4rem; text-shadow: 2px 2px 10px rgba(0,0,0,0.3); margin-bottom: 10px; }
+        .final-signature { font-family: 'Dancing Script', cursive; font-size: 1.5rem; opacity: 0; transition: opacity 1s 1s; }
+
+        .text-content { font-family: 'Dancing Script', cursive; font-size: 1.1rem; line-height: 1.4; color: var(--text-main); text-align: center; }
+        .next-btn { position: absolute; bottom: 20px; right: 20px; background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; opacity: 0; transition: opacity 1s; z-index: 150; font-weight: bold; }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        @media (max-width: 600px) {
+            .card.fullscreen { width: 95vw; height: 80vh; }
+            .love-text { font-size: 2.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="Bruno Mars - Just the Way You Are.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="stage" id="stage">
+        <div class="envelope">
+            <div class="flap" id="flap"></div>
+            <div class="seal" id="seal">♥</div>
+        </div>
+    </div>
+
+    <div class="card" id="card">
+        <div class="cover">
+            <h1 style="font-family: 'Great Vibes'; font-size: 2.5rem;">Happy Valentine's Day</h1>
+            <p style="font-family: 'Dancing Script'; font-size: 2.5rem; margin: 5px;">Tito</p>
+            <div style="font-size: 40px;">🌹</div>
+        </div>
+
+        <div class="book" id="bookContent">
+            <div class="page page-static-left">
+                <div class="bear-box" id="bear"><img src="susan-lu4esm-ai-generated-7740032_1920-removebg-preview.png"></div>
+                <div class="text-content" id="msg1"></div>
+            </div>
+
+            <div class="page page-flip" id="flipPage">
+                <div class="front">
+                    <div class="text-content" id="msg2"></div>
+                </div>
+                <div class="back">
+                    <div class="text-content" id="msg3"></div>
+                </div>
+            </div>
+
+            <div class="page page-static-right">
+                <div class="video-container">
+                    <video id="vdayVideo" playsinline muted preload="auto">
+                        <source src="WhatsApp Video 2026-02-09 at 14.41.14.mp4" type="video/mp4">
+                    </video>
+                    
+                    <div id="finalOverlay">
+                        <div class="love-text">I Love You</div>
+                        <div class="final-signature" id="finalSig">Forever Yours,<br>Your Boyfriend</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="next-btn" id="nextBtn">Next Page ➔</button>
+    </div>
+
+    <script>
+        const body = document.body;
+        const stage = document.getElementById('stage');
+        const flap = document.getElementById('flap');
+        const card = document.getElementById('card');
+        const book = document.getElementById('bookContent');
+        const bear = document.getElementById('bear');
+        const flipPage = document.getElementById('flipPage');
+        const nextBtn = document.getElementById('nextBtn');
+        const video = document.getElementById('vdayVideo');
+        const overlay = document.getElementById('finalOverlay');
+        const finalSig = document.getElementById('finalSig');
+        const music = document.getElementById('bgMusic');
+
+        const txt1 = "Hello baby, it's been 18 days since I finally mustered the courage to listen to my heart but it's been more than 5 years I've had you in it.";
+        const txt2 = "I just want you to know you are a very special part of my life, you mean a lot to me and I'm really glad to have a girlfriend like you. I'll do my best to make sure you never have to wish for another.\n\nI love you babe.";
+        const txt3 = "From your laugh to the gleam in your eyes when you smile to the glow you radiate anytime I see you to the sexy shape, I hope nothing changes cause you're amazing just the way you are.";
+
+        stage.addEventListener('click', () => {
+            music.volume = 0.5;
+            music.play().catch(e => console.log("Music play blocked", e));
+            document.getElementById('seal').style.opacity = '0';
+            flap.classList.add('open');
+            body.style.backgroundColor = "#ff4d6d"; 
+
+            setTimeout(() => card.classList.add('emerge'), 600);
+            setTimeout(() => { stage.style.opacity = '0'; card.classList.add('fullscreen'); }, 1600);
+            setTimeout(() => { 
+                card.classList.add('open-book'); 
+                book.classList.add('visible');
+                bear.classList.add('active'); 
+                body.style.backgroundColor = "#c9184a"; 
+            }, 2800);
+            setTimeout(() => startSequence(), 4500);
+        });
+
+        async function startSequence() {
+            await typeEffect('msg1', txt1);
+            await typeEffect('msg2', txt2);
+            nextBtn.style.opacity = "1";
+        }
+
+        nextBtn.addEventListener('click', async () => {
+            nextBtn.style.opacity = "0";
+            flipPage.classList.add('flipped');
+            body.style.backgroundColor = "#800f2f"; 
+            
+            setTimeout(async () => {
+                await typeEffect('msg3', txt3);
+                video.play();
+            }, 1000);
+        });
+
+        video.addEventListener('ended', () => {
+            overlay.style.opacity = "1";
+            finalSig.style.opacity = "1";
+        });
+
+        function typeEffect(id, text) {
+            return new Promise((resolve) => {
+                let i = 0;
+                const el = document.getElementById(id);
+                const timer = setInterval(() => {
+                    if (i < text.length) {
+                        el.innerHTML = text.substring(0, i + 1) + '<span style="border-left:2px solid red; animation: blink 0.8s infinite"></span>';
+                        i++;
+                    } else {
+                        clearInterval(timer); el.innerHTML = text; resolve();
+                    }
+                }, 85);
+            });
+        }
+    </script>
+</body>
+</html>
